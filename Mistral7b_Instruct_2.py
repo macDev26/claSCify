@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 class APIError(Exception):
     pass
 
+# Validate that all required input fields have the correct types
 def validate_inputs(abstract: str, conclusion: str, keywords: List[str], conference_name: str) -> bool:
     if not isinstance(abstract, str):
         raise ValueError("Abstract must be a non-empty string")
@@ -25,15 +26,18 @@ def validate_inputs(abstract: str, conclusion: str, keywords: List[str], confere
         raise ValueError("Conference name must be a non-empty string")
     return True
 
+# Normalize whitespace and remove special tokens and formatting artifacts
 def clean_generated_text(text: str) -> str:
     text = ' '.join(text.split())
     text = re.sub(r'<\|.*?\|>', '', text)
     text = re.sub(r'\[.*?\]:', '', text)
     return text.strip()
 
+# Count words by splitting on whitespace
 def get_word_count(text: str) -> int:
     return len(text.split())
 
+# Send a prompt to the Mistral-7B Instruct API and return the cleaned generated text
 def call_mistral_api(prompt: str, max_length: int = 200, temperature: float = 0.6, max_retries: int = 3, retry_delay: int = 2) -> str:
     payload = {
         "inputs": prompt,
@@ -49,6 +53,7 @@ def call_mistral_api(prompt: str, max_length: int = 200, temperature: float = 0.
     api_url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
     headers = {"Authorization": "Bearer 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"}
 
+    # Retry loop with backoff for transient API failures
     for attempt in range(max_retries):
         try:
             response = requests.post(api_url, headers=headers, json=payload, timeout=30)
@@ -74,6 +79,7 @@ def call_mistral_api(prompt: str, max_length: int = 200, temperature: float = 0.
         except (KeyError, IndexError) as e:
             raise APIError(f"Unexpected API response format: {str(e)}")
 
+# Generate a detailed ~100 word justification using abstract, conclusion, and keywords
 def generate_initial_justification(
     abstract: str,
     conclusion: str,
@@ -97,6 +103,7 @@ def generate_initial_justification(
 
     return call_mistral_api(f"{system_prompt}\n\n{user_prompt}")
 
+# Condense the initial justification into a concise 50-70 word summary
 def generate_final_justification(initial_justification: str) -> str:
     system_prompt = (
         "You are a precise AI that creates concise summaries. "
@@ -111,6 +118,7 @@ def generate_final_justification(initial_justification: str) -> str:
 
     return call_mistral_api(f"{system_prompt}\n\n{user_prompt}", max_length=150)
 
+# Two-stage justification pipeline: generate detailed justification then summarize it
 def Doraemon_justification(
     abstract: str,
     conclusion: str,
