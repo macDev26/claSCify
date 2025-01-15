@@ -11,10 +11,13 @@ from Conference_classification import DoraemonConferenceClassifier
 
 def load_model(model, checkpoint_path, device):
     """Helper function to load model with correct state dict structure"""
+    # Load the checkpoint file onto the specified target device (CPU or CUDA)
     checkpoint = torch.load(checkpoint_path, map_location=device)
+    # Verify if the saved checkpoint contains the full model state dictionary
     if 'model_state_dict' in checkpoint:
         model.load_state_dict(checkpoint['model_state_dict'])
     else:
+        # If the state dictionary is stored directly, load it directly
         model.load_state_dict(checkpoint)
     return model
 def process_saved_data(input_dir: Path, output_dir: Path):
