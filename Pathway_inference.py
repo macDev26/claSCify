@@ -19,6 +19,7 @@ import re
 from PDFparserFITZ import DoraemonPDFParser
 from Scibert_embeddings import DoraemonProcessor
 
+# Data container for a processed PDF section with its heading, content, vector embedding, keywords, and metadata
 @dataclass
 class ProcessedSection:
     heading: str
@@ -28,6 +29,7 @@ class ProcessedSection:
     metadata: Dict[str, Any]
 
 class EnhancedPDFVectorStore:
+    # Initialize the PDF vector store with Google Drive credentials, server config, and processing parameters
     def __init__(
         self,
         credentials_file: str,
@@ -60,6 +62,7 @@ class EnhancedPDFVectorStore:
         self._init_processors()
         self._init_google_drive()
         
+    # Check that text meets minimum length and word count requirements before processing
     def _validate_text(self, text: str) -> bool:
         """Validate if the text meets minimum requirements for processing."""
         if not isinstance(text, str):
@@ -78,6 +81,7 @@ class EnhancedPDFVectorStore:
             
         return True
 
+    # Set up the PDF parser and SciBERT processor, and run a quick verification test
     def _init_processors(self):
         """Initialize and verify the PDF parser and SciBERT processor."""
         try:
@@ -94,6 +98,7 @@ class EnhancedPDFVectorStore:
             self.logger.error(f"Failed to initialize processors: {str(e)}")
             raise RuntimeError("Component initialization failed") from e
 
+    # Authenticate with Google Drive API using service account credentials
     def _init_google_drive(self):
         """Initialize and verify Google Drive connection."""
         try:
