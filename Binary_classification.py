@@ -55,9 +55,11 @@ class DoraemonDataset(Dataset):
         self.features = (self.features - self.features.mean(dim=0)) / self.features.std(dim=0)
         
     def __len__(self):
+        # Return the total number of samples in this dataset
         return len(self.labels)
     
     def __getitem__(self, idx):
+        # Retrieve the feature vector and its corresponding label at index idx
         return self.features[idx], self.labels[idx]
 
 class DoraemonBinaryClassifier(nn.Module):
