@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 class APIError(Exception):
     pass
 
+# Validate that all input parameters have the correct types before API call
 def validate_inputs(abstract: str, conclusion: str, keywords: List[str], conference_name: str) -> bool:
     if not isinstance(abstract, str):
         raise ValueError("Abstract must be a non-empty string")
@@ -25,6 +26,7 @@ def validate_inputs(abstract: str, conclusion: str, keywords: List[str], confere
         raise ValueError("Conference name must be a non-empty string")
     return True
 
+# Normalize whitespace and strip special tokens and formatting artifacts from model output
 def clean_generated_text(text: str) -> str:
     text = ' '.join(text.split())
     text = re.sub(r'<\|.*?\|>', '', text)
@@ -32,9 +34,11 @@ def clean_generated_text(text: str) -> str:
     text = re.sub(r'\[.*?\]:', '', text)  # Remove prefixes like [Assistant]:
     return text.strip()
 
+# Count the number of words by splitting on whitespace
 def get_word_count(text: str) -> int:
     return len(text.split())
 
+# Generate a concise justification for why a paper fits a conference using Mistral-7B
 def Doraemon_justification(
     abstract: str,
     conclusion: str,
@@ -65,6 +69,7 @@ def Doraemon_justification(
         # logger.info(f"Conclusion: {get_word_count(conclusion)} words")
         # logger.info(f"Keywords: {len(keywords)} keywords")
 
+        # Construct the API request payload with generation hyperparameters
         payload = {
             "inputs": f"{system_prompt}\n\n{user_prompt}",
             "parameters": {
@@ -79,6 +84,7 @@ def Doraemon_justification(
         api_url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
         headers = {"Authorization": "Bearer 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"}
 
+        # Retry loop with exponential backoff for robustness against transient API failures
         for attempt in range(max_retries):
             try:
                 response = requests.post(api_url, headers=headers, json=payload, timeout=30)
@@ -99,6 +105,7 @@ def Doraemon_justification(
                 logger.info(f"Generated text word count: {word_count} words")
                 
                 # Verify minimum length to ensure completeness
+                # Ensure generated output meets a minimum length threshold for quality control
                 if word_count < 50:  # Minimum word count threshold
                     logger.warning(f"Generated text appears incomplete: only {word_count} words")
                     raise APIError("Generated text appears incomplete")
@@ -142,3 +149,4 @@ if __name__ == "__main__":
     keywords = ["neural networks", "evolutionary algorithms", "optimization", "AI"]
     conference_name = "NeurIPS 2025"
     main(abstract, conclusion, keywords, conference_name)
+    
