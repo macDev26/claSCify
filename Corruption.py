@@ -28,22 +28,28 @@ class TextCorruptor:
     def remove_characters(self, text):
         if not text:
             return text
+        # Convert string to list of characters for easier manipulation
         chars = list(text)
+        # Determine a random percentage of characters to remove (between 5% and 10%)
         remove_count = random.randint(len(chars) // 20, len(chars) // 10)
         for _ in range(remove_count):
             if chars:
+                # Select a random index and pop the character
                 idx = random.randint(0, len(chars) - 1)
                 chars.pop(idx)
         return ''.join(chars)
 
     def remove_words(self, text):
+        # Split text by whitespace into list of words
         words = text.split()
         if len(words) <= 1:
             return text
             
+        # Determine a random percentage of words to remove (between 16% and 25%)
         remove_count = random.randint(len(words) // 6, len(words) // 4)
         for _ in range(remove_count):
             if words:
+                # Select a random index and pop the word
                 idx = random.randint(0, len(words) - 1)
                 words.pop(idx)
         return ' '.join(words)
