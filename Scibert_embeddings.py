@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 import threading
 
 class DoraemonProcessor:
+    # Load the SciBERT model and tokenizer, and move model to available GPU or CPU
     def __init__(self, model_name: str = "allenai/scibert_scivocab_uncased"):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModel.from_pretrained(model_name)
@@ -23,6 +24,7 @@ class DoraemonProcessor:
         self.hidden_size = 768
         self.lock = threading.Lock()
 
+    # Tokenize text and split into fixed-size chunks with padding for batch processing
     def get_chunks(self, text: str, max_length: int = 512) -> Tuple[torch.Tensor, torch.Tensor]:
         tokens = self.tokenizer(text, return_tensors="pt", truncation=False)
         input_ids = tokens["input_ids"][0]
@@ -32,6 +34,7 @@ class DoraemonProcessor:
         chunks_ids = []
         chunks_mask = []
 
+        # Slice tokens into chunks and pad shorter chunks to max_length
         for start in chunk_boundaries:
             end = min(start + max_length, num_tokens)
             chunk_ids = input_ids[start:end]
@@ -48,6 +51,7 @@ class DoraemonProcessor:
         return all_chunk_ids.to(self.device), all_chunk_masks.to(self.device)
 
     @torch.no_grad()
+    # Run each chunk through SciBERT and collect embeddings and hidden states
     def process_text(self, chunks_ids: torch.Tensor, chunks_mask: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         all_embeddings = []
         all_hidden_states = []
@@ -64,6 +68,7 @@ class DoraemonProcessor:
         final_mask = final_mask[:final_embeddings.shape[1]]
         return final_embeddings, final_mask, torch.stack(all_hidden_states)
 
+    # Pool token-level embeddings into document-level representations using mean, max, and attention pooling
     def aggregate_embeddings(self, embeddings: torch.Tensor, attention_mask: torch.Tensor) -> Dict[str, torch.Tensor]:
         if attention_mask.dim() == 1:
             attention_mask = attention_mask.unsqueeze(0)
@@ -89,6 +94,7 @@ class DoraemonProcessor:
 
         return {"mean": mean_pooled, "max": max_pooled, "attention": attention_pooled}
 
+    # Compute statistical and readability features from the raw text
     def _calculate_statistical_features(self, text: str) -> Dict[str, float]:
         words = text.split()
         sentences = text.split('.')
