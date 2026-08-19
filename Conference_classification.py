@@ -1,5 +1,4 @@
 import torch
-
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -10,6 +9,8 @@ from tqdm import tqdm
 
 class DoraemonConferenceDataset(Dataset):
     def __init__(self, root_dir, weights_path, label_map):
+        # Load feature vectors from conference-specific subdirectories, apply learned weights
+        # to each tensor, and normalize the resulting features across the dataset
         self.features = []
         self.labels = []
         print(f"\nLoading weights from {weights_path}")
@@ -44,14 +45,18 @@ class DoraemonConferenceDataset(Dataset):
         print("\nNormalizing features...")
         self.features = (self.features - self.features.mean(dim=0)) / (self.features.std(dim=0) + 1e-6)
         
+    # Return the total number of samples in this dataset
     def __len__(self):
         return len(self.labels)
     
+    # Retrieve the feature vector and corresponding conference label at the given index
     def __getitem__(self, idx):
         return self.features[idx], self.labels[idx]
 
 class DoraemonConferenceClassifier(nn.Module):
     def __init__(self, input_dim, num_classes):
+        # Build a 4-layer feedforward network with BatchNorm and Dropout regularization
+        # that progressively reduces dimensionality: input -> 256 -> 128 -> 64 -> 32 -> num_classes
         super(DoraemonConferenceClassifier, self).__init__()
         self.model = nn.Sequential(
             nn.Linear(input_dim, 256),
@@ -79,9 +84,11 @@ class DoraemonConferenceClassifier(nn.Module):
         print(f"Total parameters: {total_params:,}")
         print(f"Trainable parameters: {trainable_params:,}")
 
+    # Pass input through the sequential classification layers
     def forward(self, x):
         return self.model(x)
 
+# Compute overall accuracy and per-class accuracy for multi-class evaluation
 def calculate_multiclass_metrics(y_true, y_pred, num_classes):
     correct = (y_pred == y_true).sum().item()
     total = y_true.size(0)
@@ -104,6 +111,7 @@ def calculate_multiclass_metrics(y_true, y_pred, num_classes):
     }
 
 def conference_model(input_dim, num_classes):
+    # Initialize the model, loss function (CrossEntropy for multi-class), optimizer (AdamW), and LR scheduler
     print(f"\nCreating model with input dimension: {input_dim}")
     model = DoraemonConferenceClassifier(input_dim, num_classes)
     loss_fn = nn.CrossEntropyLoss()

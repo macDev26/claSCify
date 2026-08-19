@@ -19,6 +19,7 @@ from Mistral7b_Instruct_1 import Doraemon_justification
 
 def load_css():
     """Load enhanced custom CSS styles"""
+    # Inject custom CSS styles for the Streamlit dashboard components
     st.markdown("""
         <style>
         /* Modern layout styles */

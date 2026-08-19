@@ -44,12 +44,17 @@ class DoraemonPDFParser:
         self.logger = logging.getLogger(__name__)
 
     def clean_text(self, text: str) -> str:
+        # Convert non-ASCII characters to ASCII equivalents or ignore them
         text = text.encode('ascii', 'ignore').decode('ascii')
+        # Remove patterns like URLs, emails, citations, etc.
         for pattern_name, pattern in self.patterns.items():
             if pattern_name not in ['figure_captions', 'table_captions', 'section_number']:
                 text = re.sub(pattern, '', text)
+        # Rejoin hyphenated words split across lines
         text = re.sub(r'(?<=[a-z])-\n(?=[a-z])', '', text)
+        # Replace remaining newlines with spaces
         text = re.sub(r'(?<=[a-z])\n(?=[a-z])', ' ', text)
+        # Collapse multiple whitespace characters into a single space
         text = re.sub(r'\s+', ' ', text)
         return text.strip()
 
